@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Animated map of Dallas on 22 November 1963, from the morning to Oswald's arrest at the Texas Theatre.">
+<style>body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}[hidden]{display:none!important}</style>
+<title>Dallas, 22 November 1963</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: map-first split. A schematic street map on the left, a police-log style sidebar on the right, one shared clock. */
+:root{
+  --bg:#e9edf0; --panel:#ffffff; --paper:#f7f8f6; --ink:#16212b; --muted:#5a6772; --line:#d2d9de;
+  --street:#cfd5da; --street-major:#a8b2ba; --river:#c9dceb; --hl:#fff1bd;
+  --oz:#c2232c; --mc:#1c58b5; --tp:#1d7650; --bw:#a86a00; --pd:#55606b; --jr:#7a3fa8; --kc:#b4441a; --wb:#4a4fb3; --bus:#2a7a92;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e141a; --panel:#151d25; --paper:#111921; --ink:#e2e8ec; --muted:#93a1ad; --line:#26323d;
+  --street:#24313c; --street-major:#3b4b59; --river:#15303f; --hl:#3a3216;
+  --oz:#ff5d62; --mc:#6a9fff; --tp:#41c48c; --bw:#e8a83a; --pd:#9aa7b2; --jr:#c08cf0; --kc:#ff8f5c; --wb:#a3a8ff; --bus:#5ec4e0; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0e141a; --panel:#151d25; --paper:#111921; --ink:#e2e8ec; --muted:#93a1ad; --line:#26323d;
+  --street:#24313c; --street-major:#3b4b59; --river:#15303f; --hl:#3a3216;
+  --oz:#ff5d62; --mc:#6a9fff; --tp:#41c48c; --bw:#e8a83a; --pd:#9aa7b2; --jr:#c08cf0; --kc:#ff8f5c; --wb:#a3a8ff; --bus:#5ec4e0; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45}
+.wrap{max-width:1400px;margin:0 auto;padding-inline:16px;padding-block:18px 28px;display:flex;flex-direction:column;gap:14px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.eyebrow{margin:0 0 2px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:clamp(26px,4vw,38px);line-height:1;letter-spacing:.01em;text-wrap:balance}
+.clockbox{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.clock{font-family:var(--f-mono);font-size:clamp(28px,4.5vw,40px);font-variant-numeric:tabular-nums;line-height:1}
+.clock small{font-size:.45em;color:var(--muted);margin-left:6px}
+.rel{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+button,select{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+button:hover,select:hover{border-color:var(--muted)}
+button:focus-visible,select:focus-visible,input:focus-visible,li:focus-visible{outline:2px solid var(--mc);outline-offset:2px}
+#play{background:var(--ink);color:var(--panel);border-color:var(--ink);font-weight:600;min-width:84px}
+.scrub{position:relative;flex:1 1 260px;min-width:0;padding-top:12px}
+.ticks{position:absolute;left:8px;right:8px;top:0;height:10px;pointer-events:none}
+.ticks i{position:absolute;top:0;width:2px;height:9px;border-radius:1px;transform:translateX(-1px);opacity:.85}
+input[type=range]{width:100%;accent-color:var(--oz);margin:0}
+.spd{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:14px;align-items:start}
+@media (max-width:960px){.app{grid-template-columns:minmax(0,1fr)}}
+.mapbox{position:relative;height:clamp(380px,68vh,760px);background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+#map{width:100%;height:100%;display:block}
+.views{position:absolute;top:10px;left:10px;display:flex;flex-wrap:wrap;gap:4px;max-width:calc(100% - 20px)}
+.views button{font-size:12px;padding:4px 8px;background:var(--panel)}
+.views button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.scale{position:absolute;right:12px;top:14px;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.scale span:first-child{display:block;height:5px;border:1.5px solid var(--muted);border-top:0}
+.caption{position:absolute;left:10px;right:10px;bottom:10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;display:flex;gap:10px;align-items:baseline;box-shadow:0 2px 10px rgb(0 0 0 / .12)}
+.caption b{font-family:var(--f-mono);font-weight:500;font-size:12px;white-space:nowrap}
+.caption span{min-width:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:8px 2px 0;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:11px;height:11px;border-radius:50%;display:inline-block}
+.ln{width:22px;height:0;border-top:2.5px solid var(--muted);display:inline-block}
+.ln.d{border-top-style:dashed}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+h2{margin:0 0 8px;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.st{display:grid;grid-template-columns:12px minmax(0,1fr);gap:2px 10px;padding:7px 0;border-top:1px solid var(--line)}
+.st:first-child{border-top:0;padding-top:0}
+.st .sw{margin-top:4px}
+.st b{font-weight:600;font-size:13px}
+.mph{margin-left:8px;font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--muted)}
+.st p{margin:0;grid-column:2;color:var(--ink);font-size:13px}
+#bld{width:100%;height:auto;display:block}
+.small{font-size:12px;color:var(--muted);margin:6px 0 0}
+.bnote{margin:6px 0 0;padding:0;list-style:none;font-size:12px;display:flex;flex-direction:column;gap:3px}
+.log ol{position:relative;list-style:none;margin:0;padding:0;max-height:420px;overflow-y:auto;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){.log ol{scroll-behavior:auto}}
+.log li{display:grid;grid-template-columns:58px minmax(0,1fr);gap:8px;padding:6px 6px;border-radius:5px;cursor:pointer;border-left:3px solid transparent}
+.log li:hover{background:var(--bg)}
+.log li.fut{opacity:.42}
+.log li.cur{background:var(--hl)}
+.log time{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted);padding-top:1px}
+.log .tx{font-size:13px;min-width:0}
+.tag{display:inline-block;margin-left:4px;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 4px;white-space:nowrap}
+.tag.dis{color:var(--oz);border-color:currentColor}
+.foot{font-size:12px;color:var(--muted);max-width:80ch;margin:0}
+svg text{font-family:var(--f-body)}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Friday 22 November 1963 · Dallas, Texas · Central Standard Time</p>
+      <h1>From Love Field to the Texas Theatre</h1>
+    </div>
+    <div class="clockbox">
+      <div class="clock" id="clk" aria-live="off">11:50:00<small>AM</small></div>
+      <div class="rel" id="rel">40:00 before the shots</div>
+    </div>
+  </header>
+
+  <section class="controls" aria-label="Playback">
+    <button id="play" type="button">Play</button>
+    <button id="prev" type="button" aria-label="Previous event">◀ Event</button>
+    <button id="next" type="button" aria-label="Next event">Event ▶</button>
+    <div class="scrub"><div class="ticks" id="ticks"></div><input id="rng" type="range" aria-label="Time of day"></div>
+    <label class="spd" for="spd">Speed
+      <select id="spd">
+        <option value="20">1 min = 3 s</option>
+        <option value="60" selected>1 min = 1 s</option>
+        <option value="150">1 min = 0.4 s</option>
+      </select>
+    </label>
+  </section>
+
+  <main class="app">
+    <div>
+      <div class="mapbox">
+        <svg id="map" role="img" aria-label="Schematic map of Dallas showing the motorcade, Oswald and Officer Tippit"></svg>
+        <div class="views" id="views">
+          <button type="button" data-v="follow" aria-pressed="true">Follow the action</button>
+          <button type="button" data-v="all" aria-pressed="false">Whole area</button>
+          <button type="button" data-v="dp" aria-pressed="false">Dealey Plaza</button>
+          <button type="button" data-v="oc" aria-pressed="false">Oak Cliff</button>
+          <button type="button" data-v="so" aria-pressed="false">South Oak Cliff</button>
+        </div>
+        <div class="scale"><span id="sbar"></span><span id="slab"></span></div>
+        <div class="caption"><b id="capT"></b><span id="capX"></span></div>
+      </div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--mc)"></i>Presidential motorcade</span>
+        <span><i class="sw" style="background:var(--oz)"></i>Oswald</span>
+        <span><i class="sw" style="background:var(--tp);border-radius:2px"></i>Officer J.D. Tippit</span>
+        <span><i class="sw" style="background:var(--bus)"></i>McWatters' bus 1213</span>
+        <span><i class="sw" style="background:var(--kc);border-radius:2px"></i>Reserve Sgt. Kenneth Croy</span>
+        <span><i class="sw" style="background:var(--wb);border-radius:2px"></i>Capt. W.R. Westbrook</span>
+        <span><i class="ln"></i>Documented route</span>
+        <span><i class="ln d"></i>Route not witnessed</span>
+        <span><i class="sw" style="background:var(--jr);border-radius:2px;transform:rotate(45deg);width:9px;height:9px"></i>Jack Ruby's apartment</span>
+        <span><i class="sw" style="border:1.5px dashed var(--tp);border-radius:2px;transform:rotate(45deg);width:9px;height:9px"></i>Later witness account (Drenas, 1998)</span>
+      </div>
+    </div>
+
+    <aside class="side">
+      <section class="card"><h2>Where everyone is</h2><div id="status"></div></section>
+      <section class="card" id="bldCard">
+        <h2>Inside the Book Depository</h2>
+        <svg id="bld" viewBox="0 0 330 240" role="img" aria-label="Cross-section of the Texas School Book Depository floors"></svg>
+        <ul class="bnote" id="bnote"></ul>
+      </section>
+      <section class="card log"><h2>Timeline</h2><ol id="log"></ol></section>
+    </aside>
+  </main>
+
+  <p class="foot">The map is schematic. Key addresses are geocoded from their 1963 street addresses, but streets are simplified and the Rebel Drive-In position is approximate. Croy and Westbrook gave no clock times in testimony, so their times are estimated from the order of events they described. Speeds are straight-line averages between documented points, so real speeds were somewhat higher; on dashed stretches they are minimums. Times come from Dallas police radio logs (accurate to a minute or two), Warren Commission reconstructions and witness estimates, which often disagree. Items marked “disputed” rest on contested testimony.</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+// ---------- time ----------
+function tm(s){var a=s.split(":").map(Number),h=a[0];if(h<7)h+=12;return h*60+a[1]+(a[2]||0)/60;}
+var T0=tm("9:50"),TFF=tm("11:45"),T1=tm("1:55"),TSHOT=tm("12:30");
+function pad(n){return (n<10?"0":"")+n;}
+function clock(t){var s=Math.round(t*60),H=Math.floor(s/3600),M=Math.floor(s%3600/60),S=s%60;return {hm:(((H+11)%12)+1)+":"+pad(M)+":"+pad(S),ap:H>=12?"PM":"AM",short:(((H+11)%12)+1)+":"+pad(M)};}
+
+// ---------- projection (1 unit ≈ 111 m) ----------
+function X(lng){return (lng+96.86)*1000*0.8406;}
+function Y(lat){return (32.86-lat)*1000;}
+function P(ll){return [X(ll[1]),Y(ll[0])];}
+
+// ---------- places (positions geocoded from 1963 street addresses where possible) ----------
+var TSBD=[32.7787,-96.8093], DOOR=[32.7786,-96.8090], GREY=[32.7786,-96.8042], GRIFFIN=[32.7808,-96.8018], LAMARELM=[32.7804,-96.8039],
+    STPAUL=[32.7822,-96.7952], CITYHALL=[32.7817,-96.7938], CTHSE=[32.7784,-96.8072],
+    RH=[32.7552,-96.8228], TP=[32.7472,-96.8188], TT=[32.7432,-96.8252], HARDY=[32.7433,-96.8246],
+    JACKET=[32.7443,-96.8214], PARK=[32.8109,-96.8361], LOVE=[32.8471,-96.8518], DROP=[32.7507,-96.8228],
+    GLOCO=[32.7612,-96.8162], TOPTEN=[32.7431,-96.8280], RUBY=[32.7462,-96.8128], LAN8=[32.7505,-96.8133],
+    SUBST=[32.7203,-96.8849], EILL=[32.7166,-96.7801], REBEL=[32.6956,-96.7692], HOME=[32.6575,-96.8252],
+    BVIEW=[32.7093,-96.7756], LIBRARY=[32.7458,-96.8152], ZANGCOL=[32.7598,-96.8183], ZANGJEFF=[32.7431,-96.8264],
+    AUSTINBBQ=[32.7190,-96.8620], LAKEWOOD=[32.8150,-96.7515], ANNARBOR=[32.6990,-96.8146];
+
+var STREETS=[
+ {w:3,c:"street-major",n:"Stemmons Fwy",z:60,lp:[32.7965,-96.8282],pts:[[32.7772,-96.8118],[32.7830,-96.8180],[32.7930,-96.8260],[32.8040,-96.8330],[32.8150,-96.8420],[32.8300,-96.8500]]},
+ {w:2,c:"street-major",n:"Harry Hines Blvd",z:40,lp:[32.8000,-96.8235],pts:[[32.7880,-96.8100],[32.8109,-96.8350],[32.8300,-96.8560]]},
+ {w:2,c:"street-major",n:"Lemmon Ave",z:70,lp:[32.8230,-96.8205],pts:[[32.8065,-96.8095],[32.8200,-96.8180],[32.8385,-96.8320],[32.8500,-96.8460]]},
+ {w:2,c:"street",n:"Mockingbird Ln",z:70,lp:[32.8370,-96.8420],pts:[[32.8392,-96.8560],[32.8385,-96.8320],[32.8380,-96.8200]]},
+ {w:2,c:"street",n:"Turtle Creek",z:40,pts:[[32.8065,-96.8095],[32.8000,-96.8050]]},
+ {w:2,c:"street",n:"Cedar Springs",z:40,pts:[[32.8000,-96.8050],[32.7935,-96.8000]]},
+ {w:2,c:"street",n:"Harwood St",z:22,lp:[32.7870,-96.7950],pts:[[32.7935,-96.8000],[32.7900,-96.7975],[32.7817,-96.7938],[32.7790,-96.7925]]},
+ {w:2,c:"street",n:"Elm St",z:22,lp:[32.7812,-96.7985],pts:[[32.7772,-96.8120],[32.7782,-96.8102],[32.7790,-96.8084],[32.7799,-96.8062],[32.7804,-96.8038],[32.7822,-96.7952],[32.7835,-96.7880]]},
+ {w:2,c:"street",n:"Main St",z:22,lp:[32.7798,-96.8025],pts:[[32.7770,-96.8118],[32.7779,-96.8100],[32.7788,-96.8079],[32.7805,-96.7994],[32.7817,-96.7938],[32.7825,-96.7880]]},
+ {w:2,c:"street",n:"Commerce St",z:14,lp:[32.7786,-96.8010],pts:[[32.7766,-96.8115],[32.7781,-96.8076],[32.7798,-96.7990],[32.7810,-96.7935]]},
+ {w:2,c:"street",n:"Houston St",z:22,lp:[32.7725,-96.8100],pts:[[32.7810,-96.8083],[32.7790,-96.8084],[32.7781,-96.8076],[32.7740,-96.8085],[32.7690,-96.8100],[32.7640,-96.8130],[32.7612,-96.8162]]},
+ {w:2,c:"street",n:"Lamar St",z:14,lp:[32.7760,-96.8050],pts:[[32.7830,-96.8035],[32.7804,-96.8039],[32.7786,-96.8042],[32.7740,-96.8048]]},
+ {w:2,c:"street",n:"Zang Blvd",z:28,lp:[32.7600,-96.8205],pts:[[32.7612,-96.8162],[32.7598,-96.8183],[32.7578,-96.8226],[32.7500,-96.8252],[32.7431,-96.8264]]},
+ {w:2,c:"street",n:"Colorado Blvd",z:28,lp:[32.7603,-96.8260],pts:[[32.7594,-96.8442],[32.7598,-96.8183],[32.7600,-96.8100]]},
+ {w:2,c:"street",n:"N. Beckley Ave",z:28,lp:[32.7530,-96.8240],pts:[[32.7690,-96.8235],[32.7552,-96.8228],[32.7400,-96.8226]]},
+ {w:2,c:"street",n:"W. Jefferson Blvd",z:28,lp:[32.7422,-96.8305],pts:[[32.7430,-96.8340],[32.7431,-96.8280],[32.7432,-96.8252],[32.7447,-96.8204],[32.7458,-96.8152],[32.7462,-96.8100]]},
+ {w:2,c:"street",n:"10th St",z:28,lp:[32.7480,-96.8150],pts:[[32.7440,-96.8310],[32.7450,-96.8247],[32.7472,-96.8188],[32.7482,-96.8100]]},
+ {w:2,c:"street",n:"Patton Ave",z:16,lp:[32.7500,-96.8208],pts:[[32.7530,-96.8201],[32.7471,-96.8197],[32.7440,-96.8199]]},
+ {w:2,c:"street",n:"E. 8th St",z:16,lp:[32.7510,-96.8170],pts:[[32.7500,-96.8250],[32.7505,-96.8120]]},
+ {w:2,c:"street",n:"Neely St",z:14,pts:[[32.7507,-96.8270],[32.7507,-96.8190]]},
+ {w:2,c:"street-major",n:"Marsalis Ave",z:40,lp:[32.7370,-96.8160],pts:[[32.7612,-96.8162],[32.7549,-96.8156],[32.7458,-96.8152],[32.7413,-96.8148],[32.7200,-96.8147],[32.6990,-96.8146]]},
+ {w:2,c:"street",n:"Lancaster Ave",z:20,lp:[32.7545,-96.8120],pts:[[32.7620,-96.8150],[32.7573,-96.8141],[32.7505,-96.8133],[32.7400,-96.8125]]},
+ {w:2,c:"street",n:"Bishop Ave",z:14,pts:[[32.7470,-96.8282],[32.7410,-96.8280]]},
+ {w:2,c:"street",n:"Gaston Ave",z:80,lp:[32.8010,-96.7700],pts:[[32.8150,-96.7515],[32.8123,-96.7546],[32.8000,-96.7720],[32.7900,-96.7840],[32.7860,-96.7870]]},
+ {w:2,c:"street",n:"W. Illinois Ave",z:200,lp:[32.7230,-96.8500],pts:[[32.7203,-96.8900],[32.7180,-96.8300],[32.7166,-96.7801]]},
+ {w:2,c:"street",n:"Bonnie View Rd",z:200,lp:[32.7000,-96.7740],pts:[[32.7166,-96.7790],[32.7093,-96.7756],[32.6900,-96.7720]]},
+ {w:2,c:"street",n:"Loop 12 (Ledbetter)",z:200,lp:[32.6920,-96.8000],pts:[[32.6900,-96.8700],[32.6956,-96.7692]]}
+];
+var RIVER=[[32.8200,-96.8600],[32.8050,-96.8460],[32.7900,-96.8320],[32.7800,-96.8210],[32.7720,-96.8125],[32.7660,-96.8070],[32.7600,-96.7975],[32.7450,-96.7850],[32.7250,-96.7700]];
+
+var PLACES=[
+ {n:"Love Field",p:LOVE},
+ {n:"Parkland Hospital",p:PARK},
+ {n:"Book Depository",p:TSBD,dy:-1},
+ {n:"City Hall",p:CITYHALL,z:30},
+ {n:"Old Red Courthouse",p:CTHSE,z:14,dy:1},
+ {n:"Bus boarded, Elm near Griffin",p:GRIFFIN,z:26},
+ {n:"Greyhound station",p:GREY,z:26,dy:1},
+ {n:"Elm & St. Paul timing point",p:STPAUL,z:22},
+ {n:"1026 N. Beckley",p:RH,dx:1},
+ {n:"Taxi drop-off (700 block)",p:DROP,z:26,dx:1},
+ {n:"10th & Patton",p:TP,dy:-1},
+ {n:"Texas Theatre",p:TT,dy:1},
+ {n:"Jacket found",p:JACKET,z:22,dy:1},
+ {n:"Library, Marsalis & Jefferson",p:LIBRARY,z:18,dy:1},
+ {n:"GLOCO station (later account)",p:GLOCO,z:30,dx:1,later:1},
+ {n:"Top Ten Records (later account)",p:TOPTEN,z:26,dy:-1,later:1},
+ {n:"Jack Ruby's apartment, 223 S. Ewing",p:RUBY,dx:1,ruby:1},
+ {n:"Southwest Substation",p:SUBST,z:200},
+ {n:"Austin's Barbecue (approx.)",p:AUSTINBBQ,z:200,dy:1},
+ {n:"2800 E. Illinois call",p:EILL,z:200},
+ {n:"Rebel Drive-In (approx.)",p:REBEL,z:200,dy:1},
+ {n:"Tippit's home, 238 Glencairn",p:HOME,z:200,dx:1},
+ {n:"4100 block Bonnie View",p:BVIEW,z:200,dx:1},
+ {n:"Lakewood (bus route start)",p:LAKEWOOD,z:80,dy:-1},
+ {n:"Marsalis & Ann Arbor (bus loop)",p:ANNARBOR,z:200,dx:1}
+];
+var AREAS=[{n:"DOWNTOWN",p:[32.7850,-96.7975],z:40,max:60},{n:"DEALEY PLAZA",p:[32.7772,-96.8100],z:9},{n:"OAK CLIFF",p:[32.7540,-96.8160],z:60},{n:"SOUTH OAK CLIFF",p:[32.6850,-96.8300],z:200},{n:"TRINITY RIVER",p:[32.7930,-96.8395],z:80}];
+
+// ---------- tracks ----------
+function prep(nodes){
+  var n=nodes.map(function(o){var q=P(o.p);return {t:o.t!=null?tm(o.t):null,x:q[0],y:q[1],label:o.label,dash:o.dash};});
+  var d=0;n.forEach(function(o,i){if(i)d+=Math.hypot(o.x-n[i-1].x,o.y-n[i-1].y);o.d=d;});
+  var last=0;for(var i=1;i<n.length;i++){if(n[i].t!=null){for(var j=last+1;j<i;j++){var f=(n[j].d-n[last].d)/((n[i].d-n[last].d)||1);n[j].t=n[last].t+f*(n[i].t-n[last].t);}last=i;}}
+  var lab="",dash=false;n.forEach(function(o){if(o.label){lab=o.label;dash=!!o.dash;}else{o.label=lab;o.dash=dash;}});
+  return n;
+}
+function posAt(n,t){
+  if(t<n[0].t||(n.end&&t>n[n.length-1].t))return null;
+  for(var i=0;i<n.length-1;i++){if(t<=n[i+1].t){var a=n[i],b=n[i+1],f=b.t>a.t?(t-a.t)/(b.t-a.t):1;var dm=Math.hypot(b.x-a.x,b.y-a.y)*111,dtm=b.t-a.t,mph=(dtm>0&&dm>5)?(dm/1609.34)/(dtm/60):0;
+    return {x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f,i:i,label:a.label,mph:mph,dash:a.dash};}}
+  var L=n[n.length-1];return {x:L.x,y:L.y,i:n.length-1,label:L.label,mph:0};
+}
+function mphText(p){if(!p.mph)return "stationary";return (p.mph<10?p.mph.toFixed(1):Math.round(p.mph))+" mph"+(p.dash?" min. avg":" avg");}
+function paths(n,pos){
+  var full={s:"",d:""},done={s:"",d:""};
+  for(var i=0;i<n.length-1;i++){
+    var a=n[i],b=n[i+1];if(a.x===b.x&&a.y===b.y)continue;
+    var seg="M"+a.x.toFixed(2)+" "+a.y.toFixed(2)+"L"+b.x.toFixed(2)+" "+b.y.toFixed(2);
+    full[a.dash?"d":"s"]+=seg;
+    if(pos){
+      if(i<pos.i)done[a.dash?"d":"s"]+=seg;
+      else if(i===pos.i)done[a.dash?"d":"s"]+="M"+a.x.toFixed(2)+" "+a.y.toFixed(2)+"L"+pos.x.toFixed(2)+" "+pos.y.toFixed(2);
+    }
+  }
+  return {full:full,done:done};
+}
+
+
+var MOTORCADE=prep([
+ {t:"11:55",p:LOVE,label:"Leaving Love Field"},
+ {p:[32.8392,-96.8505],label:"West Mockingbird Lane"},
+ {p:[32.8385,-96.8320],label:"Lemmon Avenue, stopping briefly to greet onlookers"},
+ {p:[32.8200,-96.8180]},
+ {t:"12:12",p:[32.8065,-96.8095],label:"Turtle Creek Boulevard"},
+ {t:"12:15",p:[32.8000,-96.8050],label:"Cedar Springs Road, running about 5 minutes late"},
+ {p:[32.7935,-96.8000],label:"Harwood Street, heading into downtown"},
+ {p:[32.7900,-96.7975]},
+ {t:"12:22",p:CITYHALL,label:"Main Street, through the heaviest crowds"},
+ {p:[32.7805,-96.7994]},
+ {t:"12:29",p:[32.7788,-96.8079],label:"Turning right onto Houston Street"},
+ {t:"12:30",p:[32.7790,-96.8084],label:"Elm Street: shots fired"},
+ {t:"12:30:40",p:[32.7782,-96.8102],label:"Racing to Parkland on Stemmons Freeway"},
+ {p:[32.7772,-96.8120]},{p:[32.7830,-96.8180]},{p:[32.7930,-96.8260]},{p:[32.8040,-96.8330]},
+ {t:"12:36",p:PARK,label:"At Parkland Hospital, Trauma Room 1"},
+ {t:"1:00",p:PARK,label:"Parkland: President pronounced dead at 1:00"},
+ {t:"1:33",p:PARK,label:"Parkland: death announced by Malcolm Kilduff at 1:33"}
+]);
+var OSWALD=prep([
+ {t:"9:50",p:TSBD,label:"At work in the Book Depository. He arrived about 8:00 with Wesley Frazier, carrying a long paper package"},
+ {t:"11:50",p:TSBD,label:"Inside the Book Depository; which floor he was on is disputed"},
+ {t:"12:30",p:TSBD,label:"Inside the Book Depository as shots are fired"},
+ {t:"12:31:30",p:TSBD,label:"2nd-floor lunchroom, stopped at gunpoint by Officer Baker"},
+ {t:"12:32:30",p:TSBD,label:"Walking through the 2nd-floor office holding a Coke"},
+ {t:"12:33",p:DOOR,label:"On foot, walking east along Elm Street"},
+ {p:[32.7790,-96.8084]},{p:[32.7799,-96.8062]},{p:LAMARELM},
+ {t:"12:40",p:GRIFFIN,label:"On McWatters' bus 1213, crawling back west in traffic"},
+ {t:"12:44",p:[32.7805,-96.8034],label:"On foot down Lamar Street to the Greyhound station"},
+ {p:LAMARELM},
+ {t:"12:47:30",p:GREY,label:"Getting into William Whaley's taxi"},
+ {t:"12:48",p:GREY,label:"In Whaley's taxi over the Houston Street viaduct"},
+ {p:[32.7781,-96.8076]},{p:[32.7740,-96.8085]},{p:[32.7690,-96.8100]},{p:[32.7640,-96.8130]},{p:GLOCO},{p:[32.7598,-96.8183]},
+ {p:[32.7578,-96.8226],label:"In the taxi on North Beckley, past his rooming house"},
+ {p:RH},
+ {t:"12:54",p:DROP,label:"On foot, walking back up North Beckley"},
+ {t:"1:00",p:RH,label:"In his room at 1026 N. Beckley, collecting a jacket and revolver"},
+ {t:"1:03:30",p:RH,label:"Standing at the bus stop on Beckley"},
+ {t:"1:04",p:[32.7549,-96.8226],label:"Not seen by any witness on the way to 10th Street",dash:true},
+ {p:[32.7507,-96.8226]},{p:[32.7500,-96.8200]},{p:[32.7471,-96.8197]},
+ {t:"1:14:30",p:TP,label:"East 10th Street near Patton: Tippit shooting"},
+ {t:"1:15:30",p:TP,label:"Running south on Patton Avenue, reloading"},
+ {p:[32.7471,-96.8197]},
+ {t:"1:17",p:[32.7445,-96.8199],label:"Heading west along Jefferson Boulevard"},
+ {t:"1:19",p:JACKET,label:"Not seen by any witness for about 17 minutes",dash:true},
+ {t:"1:36",p:HARDY,label:"Ducking into the entrance of Hardy's Shoe Store"},
+ {t:"1:38",p:TT,label:"Inside the Texas Theatre without a ticket"},
+ {t:"1:50",p:TT,label:"Arrested in the Texas Theatre"}
+]);
+var BUS=prep([
+ {t:"12:12",p:LAKEWOOD,label:"Inbound from Lakewood on Gaston Avenue (departure time estimated)"},
+ {p:[32.8123,-96.7546]},{p:[32.8000,-96.7720]},{p:[32.7900,-96.7840]},
+ {p:[32.7860,-96.7870],label:"Down Hawkins Street to Elm"},{p:[32.7835,-96.7880],label:"West on Elm Street"},
+ {t:"12:36",p:STPAUL,label:"Leaving the Elm & St. Paul timing point; a teenager boards by the Majestic Theatre"},
+ {t:"12:40",p:GRIFFIN,label:"Stopped in traffic near Griffin; a man knocks on the door and boards"},
+ {t:"12:44",p:[32.7805,-96.8034],label:"Stalled between Poydras and Lamar; the man and a woman with a suitcase get off with transfers"},
+ {p:[32.7799,-96.8062],label:"Crawling west on Elm toward Houston (times estimated)",dash:true},
+ {t:"12:52",p:[32.7790,-96.8084],label:"Left onto Houston Street and over the viaduct (times estimated)",dash:true},
+ {p:[32.7781,-96.8076]},{p:[32.7740,-96.8085]},{p:[32.7690,-96.8100]},{p:[32.7640,-96.8130]},
+ {p:GLOCO,label:"South on Marsalis Avenue (times estimated)",dash:true},
+ {p:[32.7549,-96.8156]},{p:LIBRARY},{p:[32.7200,-96.8147]},
+ {t:"1:15",p:ANNARBOR,label:"Looping round the shopping centre at Ann Arbor, then back north on Marsalis (times estimated)",dash:true},
+ {t:"1:40",p:[32.7549,-96.8156]}
+]);
+BUS.end=true;
+var TIPPIT=prep([
+ {t:"9:56",p:EILL,label:"Out on investigation at 2800 E. Illinois (nature of call unknown)"},
+ {t:"10:17",p:EILL,label:"Cleared; heading for coffee",dash:true},
+ {t:"10:30",p:REBEL,label:"Tea with Patrolman Bill Anglin at the Rebel Drive-In (approx. location)"},
+ {t:"10:40",p:REBEL,label:"Answering a call at Annarbor and Corrigan, about 1.5 miles away",dash:true},
+ {t:"10:50",p:[32.6850,-96.7900],label:"Driving home for lunch; route not recorded",dash:true},
+ {t:"11:15",p:HOME,label:"Lunch at home, 238 Glencairn (times estimated)"},
+ {t:"11:50",p:HOME,label:"Back in service; heading north-east, route not recorded",dash:true},
+ {t:"12:17",p:BVIEW,label:"Out of the car at the 4100 block of Bonnie View, likely a shoplifting call"},
+ {t:"12:20",p:BVIEW,label:"Cleared; position not recorded",dash:true},
+ {t:"12:30",p:[32.7200,-96.7900],label:"Heading north toward central Oak Cliff (Drenas estimate)",dash:true},
+ {t:"12:45",p:GLOCO,label:"Parked at the GLOCO station watching traffic off the viaduct (later account)"},
+ {t:"12:52",p:GLOCO,label:"Speeding south on Lancaster (later account)"},
+ {p:[32.7620,-96.8150]},{p:[32.7573,-96.8141]},
+ {t:"12:54",p:LAN8,label:"Reports his location at Lancaster and 8th"},
+ {t:"12:55",p:LAN8,label:"Driving to West Jefferson; route not recorded",dash:true},
+ {p:[32.7458,-96.8135]},{p:[32.7447,-96.8204]},{p:TT},
+ {t:"1:00",p:TOPTEN,label:"In the Top Ten Record Shop making a phone call that goes unanswered (later account)"},
+ {t:"1:04",p:TOPTEN,label:"Leaving fast, through the stop sign at Bishop and Sunset (later account)"},
+ {t:"1:05",p:[32.7438,-96.8281],label:"Exact route not recorded",dash:true},
+ {t:"1:08",p:[32.7445,-96.8275],label:"Cruising slowly east along 10th Street"},
+ {p:[32.7450,-96.8247]},
+ {t:"1:14",p:[32.7473,-96.8184],label:"Stops a man walking on East 10th Street"},
+ {t:"1:15",p:[32.7473,-96.8184],label:"Shot and killed beside his patrol car"}
+]);
+// Croy and Westbrook gave no clock times in testimony; times below are estimated from the order of events they described.
+var CROY=prep([
+ {t:"12:30",p:CITYHALL,label:"Sitting in his car at City Hall; learns of the shooting several minutes later"},
+ {t:"12:35",p:CITYHALL,label:"Driving west on Main Street, trying to go home (times estimated)"},
+ {t:"12:38",p:[32.7801,-96.8020],label:"Hemmed in by traffic on Main near Griffin (times estimated)"},
+ {t:"12:52",p:[32.7801,-96.8020],label:"Edging along Main to the courthouse: “at least 20 minutes”"},
+ {t:"12:57",p:CTHSE,label:"At the courthouse, asking officers if they need help"},
+ {t:"1:06",p:CTHSE,label:"Driving home: out Thornton Freeway to Colorado (route approximate)",dash:true},
+ {p:[32.7700,-96.8170]},{p:[32.7600,-96.8250]},
+ {t:"1:16",p:ZANGCOL,label:"At Zang and Colorado when the Tippit call comes over the radio"},
+ {p:[32.7578,-96.8226]},{p:[32.7507,-96.8226]},
+ {t:"1:19",p:[32.7474,-96.8180],label:"At the Tippit scene: talks to a woman witness, takes Tippit's gun; later wrote that he recovered Oswald's wallet"},
+ {t:"1:48",p:[32.7474,-96.8180],label:"Driving up 10th Street to Zang after the Texas Theatre call"},
+ {p:[32.7450,-96.8247]},
+ {t:"1:51",p:ZANGJEFF,label:"Zang and Jefferson: sees officers rushing the theatre front and back, “more help than they needed”"},
+ {t:"1:52",p:ZANGJEFF,label:"Heading south on Zang to meet his wife at Austin's Barbecue, Hampton and Illinois",dash:true},
+ {t:"2:10",p:AUSTINBBQ}
+]);
+var WESTBROOK=prep([
+ {t:"12:30",p:CITYHALL,label:"In his office at City Hall (personnel captain, in plain clothes)"},
+ {t:"12:38",p:CITYHALL,label:"Walking from City Hall to the Depository, stopping at groups with transistor radios (times estimated)"},
+ {p:[32.7805,-96.7994]},{p:[32.7788,-96.8079]},
+ {t:"12:58",p:DOOR,label:"Helping search the Depository (times estimated)"},
+ {t:"1:20",p:DOOR,label:"Told on the loading dock that an officer has been killed in Oak Cliff; driving there with Sgt. Stringer",dash:true},
+ {p:[32.7740,-96.8085]},{p:[32.7640,-96.8130]},{p:GLOCO},{p:[32.7549,-96.8156]},
+ {t:"1:29",p:[32.7476,-96.8183],label:"At the Tippit scene; body already gone. FBI agent Bob Barrett later said he saw him holding a wallet"},
+ {t:"1:33",p:[32.7476,-96.8183],label:"Checking a false report of a suspect in the library at Marsalis and Jefferson",dash:true},
+ {t:"1:36",p:LIBRARY,label:"Back west along Jefferson; searching on foot with a borrowed shotgun"},
+ {p:[32.7447,-96.8204]},
+ {t:"1:40",p:JACKET,label:"Behind the Texaco station: an officer shows him a jacket under a parked car"},
+ {t:"1:44",p:JACKET,label:"Back to 10th and Patton, then to the Texas Theatre by the alley",dash:true},
+ {p:TP},
+ {t:"1:48",p:[32.7440,-96.8252],label:"Entering the Texas Theatre from the rear"},
+ {t:"1:50",p:TT,label:"In the theatre as McDonald struggles with Oswald; orders patrons' names taken"}
+]);
+
+var WILLIAMS=[
+ ["9:50","6th floor: laying new plywood flooring with the floor crew"],
+ ["11:50","1st floor: collecting his lunch after racing the elevators down from the 6th"],
+ ["12:00","6th floor: eating chicken and drinking a Dr Pepper alone near the south windows"],
+ ["12:15","5th floor south-east windows with Harold Norman and James Jarman. His estimates for leaving the 6th varied from 12:05 to 12:20"],
+ ["12:30","5th floor, directly below the sniper's nest: debris falls on his head as the shots are fired"],
+ ["12:31","Running with Norman and Jarman to the 5th-floor west windows"],
+ ["12:40","Still in the Depository; later gives statements to police and FBI"]
+];
+
+// ---------- events ----------
+// k: O Oswald, M motorcade, W Williams, T Tippit, P police
+var EV=[
+ ["9:56","T","Tippit is sent to 2800 E. Illinois on an investigation call. He clears at 10:17.","Radio log",EILL],
+ ["10:30","T","Tea with Patrolman Bill Anglin at the Rebel Drive-In on Loop 12 (Anglin's estimate of the time).","Testimony",REBEL],
+ ["10:40","T","Called to Annarbor and Corrigan, about 1.5 miles away; clears at 10:45.","Radio log"],
+ ["11:15","T","Home for lunch at 238 Glencairn. His widow confirmed he ate at home; exact times unknown.","Estimate",HOME],
+ ["11:38","M","Air Force One lands at Love Field.","Record",LOVE],
+ ["11:50","T","Tippit radios that he is clear, back in service after lunch.","Radio log",HOME],
+ ["11:50","W","The floor-laying crew races the elevators down for lunch. Oswald calls down from upstairs asking for an elevator to be sent back.","Testimony",TSBD],
+ ["11:50","O","Bill Shelley says he saw Oswald near the first-floor telephone.","Disputed"],
+ ["11:55","M","Motorcade leaves Love Field.","Radio log",LOVE],
+ ["11:55","O","Charles Givens says he saw Oswald on the 6th floor walking toward the south-east corner. His first FBI statement placed Oswald downstairs.","Disputed"],
+ ["12:00","W","Bonnie Ray Williams takes his lunch back up to the 6th floor, expecting others to join him.","Testimony"],
+ ["12:00","O","Janitor Eddie Piper says Oswald was on the first floor and said he was going up to eat.","Disputed"],
+ ["12:17","T","Tippit radios that he is out of the car at the 4100 block of Bonnie View in south Oak Cliff; a store manager later recalled a shoplifting call. He clears at 12:20.","Radio log",BVIEW],
+ ["12:15","M","Police radio places the motorcade around Cedar Springs Road.","Radio log"],
+ ["12:15","O","Arnold Rowland sees a man holding a rifle at the west end of the 6th floor.","Witness",TSBD],
+ ["12:15","O","Carolyn Arnold: in 1963 said she glimpsed Oswald on the 1st floor before 12:15; in 1978 said 2nd-floor lunchroom, 12:15 to 12:25.","Disputed"],
+ ["12:15","W","Williams leaves the 6th floor and joins Norman and Jarman on the 5th. His own estimates range from 12:05 to 12:20.","Testimony"],
+ ["12:18","O","Howard Brennan sits on the wall at Elm and Houston and sees a man at the 6th-floor south-east window several times.","Witness",TSBD],
+ ["12:22","M","Motorcade turns from Harwood onto Main Street.","Radio log",[32.7808,-96.7960]],
+ ["12:29","M","Motorcade turns right onto Houston Street, facing the Depository.","Film and photos",[32.7791,-96.8066]],
+ ["12:30","M","Motorcade turns left onto Elm Street. Shots are fired over roughly 6 to 8 seconds.","Zapruder film",[32.7795,-96.8085]],
+ ["12:30:20","W","On the 5th floor, Norman hears the rifle bolt and shells hitting the floor above. Debris falls on Williams.","Testimony",TSBD],
+ ["12:31","P","Officer Marrion Baker parks his motorcycle and runs into the Depository with superintendent Roy Truly.","Reconstruction",TSBD],
+ ["12:31:30","O","Baker confronts Oswald in the 2nd-floor lunchroom. Truly says he works here. Oswald is calm, not out of breath.","Warren Commission",TSBD],
+ ["12:32:30","O","Mrs Robert Reid passes Oswald holding a Coke in the 2nd-floor office.","Testimony"],
+ ["12:33","O","Oswald leaves by the front entrance onto Elm Street.","WC estimate",DOOR],
+ ["12:30","R","Jack Ruby is at the Dallas Morning News advertising office, a few blocks from Dealey Plaza.","Warren Commission"],
+ ["12:36","M","Limousine arrives at Parkland Hospital (times given range 12:35 to 12:38).","Radio log",PARK],
+ ["12:40","O","A man knocks on the door of McWatters' bus stopped in traffic near Elm and Griffin and gets on. Former landlady Mary Bledsoe, on board, recognises Oswald; McWatters himself could not identify him.","Testimony",GRIFFIN],
+ ["12:44","O","With the bus stalled between Poydras and Lamar, the man takes a transfer and gets off along with a woman carrying a suitcase. Transfer 004459, with McWatters' punch mark, was found on Oswald.","Testimony",[32.7805,-96.8034]],
+ ["12:36","U","McWatters' bus 1213 is due to leave the Elm and St. Paul timing point at 12:36; he was almost sure he left on time.","Testimony",STPAUL],
+ ["12:52","U","The bus reaches Houston Street, turns left and crosses the viaduct onto Marsalis, a route that passes the GLOCO station (time estimated).","Estimate",[32.7790,-96.8084]],
+ ["12:30","C","Reserve Sgt. Kenneth Croy is sitting in his car at City Hall. He says he learned of the shooting several minutes later.","Testimony",CITYHALL],
+ ["12:38","C","Driving home along Main, Croy is hemmed in by traffic near Griffin. He says reaching the courthouse took at least 20 minutes.","Testimony"],
+ ["12:57","C","Croy reaches the courthouse at Houston and Main and asks officers if they need help (time estimated).","Estimate",CTHSE],
+ ["1:16","C","Driving home via Thornton and Colorado, Croy is at Zang and Colorado when the Tippit call comes over the radio.","Testimony",ZANGCOL],
+ ["1:19","C","Croy arrives at 10th Street and later said he was the first officer there. He talks to a woman who saw the shooting and takes Tippit's gun.","Testimony",TP],
+ ["1:22","C","Croy later wrote on a photo of Tippit's car that he recovered Oswald's wallet at the scene. Police officially said the wallet was taken from Oswald after his arrest.","Disputed",TP],
+ ["1:51","C","Leaving after 30 to 40 minutes, Croy drives past the Texas Theatre at Zang and Jefferson, sees officers at the front and back, and goes on to Austin's Barbecue. Drenas notes two witnesses also placed Tippit at Austin's Barbecue.","Testimony",ZANGJEFF],
+ ["12:30","K","Capt. W.R. Westbrook is in his office at City Hall. With no car free, he walks to the Depository.","Testimony",CITYHALL],
+ ["12:58","K","Westbrook joins the search inside the Depository (time estimated).","Estimate",DOOR],
+ ["1:20","K","On the loading dock, a man tells Westbrook an officer has been killed in Oak Cliff. He goes there with Sgt. Stringer (time estimated).","Testimony",DOOR],
+ ["1:29","K","FBI agent Bob Barrett said he saw Westbrook at the scene going through a wallet, and was asked if he knew a Lee Harvey Oswald or an Alek Hidell.","Disputed",TP],
+ ["1:33","K","Westbrook checks a report of a suspect in the library at Marsalis and Jefferson; it proves false.","Testimony",LIBRARY],
+ ["1:40","K","Behind the Texaco station an officer shows Westbrook a jacket under a parked car. Neither recorded that officer's name (time estimated).","Testimony",JACKET],
+ ["1:48","K","Westbrook enters the Texas Theatre from the alley with Sgt. Stringer and agent Barrett.","Testimony",TT],
+ ["12:45","T","Tippit is ordered to move into central Oak Cliff.","Radio log"],
+ ["12:45","T","Asked his location, Tippit replies “Kiest and Bonnie View”, miles to the south. This conflicts with the GLOCO witnesses.","Conflicting"],
+ ["12:45","T","Five witnesses place Tippit parked at the GLOCO station on North Zangs, watching cars come off the Houston Street viaduct, the route Oswald's taxi takes minutes later.","Later account",GLOCO],
+ ["12:52","T","After about ten minutes Tippit speeds off south on Lancaster.","Later account",GLOCO],
+ ["12:45","P","First police broadcast of the suspect: white male, about 30, slender, about 5 ft 10 in, 165 lb.","Radio log"],
+ ["12:47:30","O","Oswald takes William Whaley's taxi at the Greyhound station, after offering it to an elderly woman.","Testimony",GREY],
+ ["12:54","O","Whaley drops him in the 700 block of North Beckley, a few blocks past his rooming house. Fare 95 cents; he pays $1.","Testimony",DROP],
+ ["12:54","T","Tippit reports his position at Lancaster and 8th.","Radio log",[32.7495,-96.8128]],
+ ["1:00","M","President Kennedy is pronounced dead at Parkland.","Hospital record",PARK],
+ ["1:00","O","Housekeeper Earlene Roberts sees Oswald come in, in a hurry. He stays 3 to 4 minutes.","Testimony",RH],
+ ["1:00","T","Tippit hurries into the Top Ten Record Shop on West Jefferson, a block from the Texas Theatre, and dials a call that rings 7 or 8 times unanswered.","Later account",TOPTEN],
+ ["1:01","O","Roberts says a police car stopped outside, honked twice and drove off. This has never been explained. If the record-shop account is right, it was not Tippit.","Disputed",RH],
+ ["1:03","P","The dispatcher calls 78 (Tippit) and gets no answer.","Radio log"],
+ ["1:04","T","Tippit runs out of the record shop and drives through the stop sign at Bishop and Sunset.","Later account",TOPTEN],
+ ["1:07","T","James Andrews says a squad car cut him off on West 10th and the officer, nameplate “Tippit”, looked into his car. He put the time around 1:00.","Later account",[32.7466,-96.8300]],
+ ["1:08","P","Two transmissions are logged as coming from 78. Researcher Bill Drenas's audio analysis attributes them to unit 388, not Tippit.","Disputed"],
+ ["1:12","T","Markham and cab driver Scoggins describe the patrol car creeping east along 10th at about 10 to 12 mph.","Witnesses",[32.7466,-96.8185]],
+ ["1:03:30","O","Oswald leaves wearing a jacket. Roberts last sees him at the bus stop on Beckley.","Testimony",RH],
+ ["1:12","P","Deputy Luke Mooney finds three shells in the 6th-floor sniper's nest.","Testimony"],
+ ["1:14","T","Tippit pulls alongside a man walking on East 10th Street and speaks to him through the window.","Witnesses",TP],
+ ["1:15","T","Tippit gets out and is shot four times. Witness estimates of the time range from about 1:06 to 1:16. Jack Ruby's apartment at 223 S. Ewing is about a third of a mile east.","Disputed",TP],
+ ["1:16","P","Domingo Benavides reports the shooting on Tippit's car radio. This log entry is the firmest time anchor.","Radio log",TP],
+ ["1:16","O","The gunman runs south on Patton, emptying shells in a yard and passing Callaway's used-car lot with the pistol in hand.","Witnesses",[32.7450,-96.8169]],
+ ["1:19","O","A light-coloured jacket is later found behind the Texaco station at Jefferson and Crawford.","Physical evidence",JACKET],
+ ["1:22","P","Deputies Boone and Weitzman find the rifle near the 6th-floor stairs. Truly later reports Oswald missing.","Testimony"],
+ ["1:30","R","Reporter Seth Kantor says he spoke to Ruby at Parkland. The Warren Commission concluded he was mistaken.","Disputed"],
+ ["1:33","M","Malcolm Kilduff announces the President's death.","Press record",PARK],
+ ["1:36","O","Shoe-store manager Johnny Brewer sees a man duck into his entrance as police cars pass, then follows him.","Testimony",HARDY],
+ ["1:38","O","The man slips into the Texas Theatre without buying a ticket. Cashier Julia Postal calls police.","Testimony",TT],
+ ["1:45","P","Radio dispatch: a suspect has gone into the Texas Theatre on West Jefferson.","Radio log",TT],
+ ["1:50","O","Officer Nick McDonald approaches. Oswald punches him and draws the revolver before being overpowered.","Testimony",TT],
+ ["1:51","P","Radio log records the arrest.","Radio log",TT]
+].map(function(e){return {t:tm(e[0]),ts:e[0],k:e[1],x:e[2],g:e[3],loc:e[4]?P(e[4]):null};});
+EV.sort(function(a,b){return a.t-b.t;});
+
+var COL={O:"--oz",M:"--mc",W:"--bw",T:"--tp",P:"--pd",R:"--jr",C:"--kc",K:"--wb",U:"--bus"};
+function cv(name){return getComputedStyle(document.documentElement).getPropertyValue(name).trim();}
+
+// ---------- DOM ----------
+var svg=document.getElementById("map"),NS="http://www.w3.org/2000/svg";
+var gBase=document.createElementNS(NS,"g"),gDyn=document.createElementNS(NS,"g");
+svg.appendChild(gBase);svg.appendChild(gDyn);
+(function(){
+  var h='<path d="M-500 -500H900V900H-500Z" fill="var(--paper)"/>';
+  h+='<polyline points="'+RIVER.map(function(p){var q=P(p);return q[0].toFixed(2)+","+q[1].toFixed(2);}).join(" ")+'" fill="none" stroke="var(--river)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
+  STREETS.forEach(function(s){h+='<polyline points="'+s.pts.map(function(p){var q=P(p);return q[0].toFixed(2)+","+q[1].toFixed(2);}).join(" ")+'" fill="none" stroke="var(--'+s.c+')" stroke-width="'+(s.w+1)+'" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';});
+  gBase.innerHTML=h;
+})();
+
+var rng=document.getElementById("rng");
+rng.min=T0;rng.max=T1;rng.step=1/60;rng.value=T0;
+document.getElementById("ticks").innerHTML=EV.map(function(e){return '<i style="left:'+((e.t-T0)/(T1-T0)*100).toFixed(2)+'%;background:var('+COL[e.k]+')"></i>';}).join("");
+
+var logEl=document.getElementById("log");
+logEl.innerHTML=EV.map(function(e,i){
+  var dis=e.g==="Disputed"||e.g==="Conflicting";
+  return '<li tabindex="0" data-i="'+i+'" style="border-left-color:var('+COL[e.k]+')"><time>'+e.ts.replace(/:(\d\d):(\d\d)$/,":$1")+'</time><span class="tx">'+e.x+' <span class="tag'+(dis?" dis":"")+'">'+e.g+'</span></span></li>';
+}).join("");
+var logItems=[].slice.call(logEl.children);
+function jump(i){t=EV[i].t+0.001;playing=false;setPlay();}
+logEl.addEventListener("click",function(ev){var li=ev.target.closest("li");if(li)jump(+li.dataset.i);});
+logEl.addEventListener("keydown",function(ev){if(ev.key==="Enter"||ev.key===" "){var li=ev.target.closest("li");if(li){ev.preventDefault();jump(+li.dataset.i);}}});
+
+// ---------- state ----------
+var t=T0,playing=false,speed=60,view="follow",cam=null,lastTs=null,curEv=-2;
+var playBtn=document.getElementById("play");
+function setPlay(){playBtn.textContent=playing?"Pause":(t>=T1?"Replay":"Play");}
+playBtn.onclick=function(){if(t>=T1)t=T0;playing=!playing;setPlay();};
+document.getElementById("spd").onchange=function(e){speed=+e.target.value;};
+rng.addEventListener("input",function(){t=+rng.value;});
+document.getElementById("prev").onclick=function(){var i=-1;EV.forEach(function(e,j){if(e.t<t-0.02)i=j;});if(i>=0)jump(i);else{t=T0;}};
+document.getElementById("next").onclick=function(){for(var j=0;j<EV.length;j++){if(EV[j].t>t+0.01){jump(j);return;}}};
+document.addEventListener("keydown",function(e){if(e.code==="Space"&&e.target===document.body){e.preventDefault();playBtn.click();}});
+document.getElementById("views").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;view=b.dataset.v;[].forEach.call(this.children,function(c){c.setAttribute("aria-pressed",String(c===b));});});
+
+// ---------- camera ----------
+function R(b){var a=P([b[0],b[1]]),c=P([b[2],b[3]]);return {cx:(a[0]+c[0])/2,cy:(a[1]+c[1])/2,w:c[0]-a[0],h:c[1]-a[1]};}
+var V={
+ ov:R([32.851,-96.858,32.775,-96.793]), dt:R([32.7845,-96.8140,32.7745,-96.7930]), dp:R([32.7808,-96.8135,32.7765,-96.8050]),
+ pk:R([32.8135,-96.8420,32.7760,-96.7990]), dO:R([32.7835,-96.8130,32.7760,-96.7985]), tx:R([32.7835,-96.8290,32.7520,-96.7970]),
+ oc:R([32.7630,-96.8340,32.7410,-96.8090]), all:R([32.851,-96.890,32.652,-96.765]), so:R([32.7260,-96.8920,32.6520,-96.7650])
+};
+var KEYS=[["9:50","so"],["11:30","so"],["11:36","ov"],["11:50","ov"],["12:18","ov"],["12:22","dt"],["12:28:30","dt"],["12:29:30","dp"],["12:31:30","dp"],["12:33","pk"],["12:36:30","pk"],["12:38:30","dO"],["12:47","dO"],["12:49","tx"],["12:53","tx"],["12:56","oc"],["1:55","oc"]].map(function(k){return {t:tm(k[0]),r:V[k[1]]};});
+function ss(f){return f*f*(3-2*f);}
+function lerpR(a,b,f){return {cx:a.cx+(b.cx-a.cx)*f,cy:a.cy+(b.cy-a.cy)*f,w:Math.exp(Math.log(a.w)+(Math.log(b.w)-Math.log(a.w))*f),h:Math.exp(Math.log(a.h)+(Math.log(b.h)-Math.log(a.h))*f)};}
+function target(){
+  if(view==="all")return V.all; if(view==="dp")return V.dp; if(view==="oc")return V.oc; if(view==="so")return V.so;
+  for(var i=0;i<KEYS.length-1;i++){if(t<=KEYS[i+1].t){var f=Math.max(0,(t-KEYS[i].t)/(KEYS[i+1].t-KEYS[i].t));return lerpR(KEYS[i].r,KEYS[i+1].r,ss(f));}}
+  return KEYS[KEYS.length-1].r;
+}
+
+// ---------- building inset ----------
+var BLD=[
+ // k,floor,x,t0,t1,tag,note
+ ["W",1,.55,"11:50","12:00","BRW","Bonnie Ray Williams, 1st floor, collecting lunch"],
+ ["Oq",1,.33,"11:50","11:54","O?","Shelley: Oswald near the 1st-floor phone (disputed)"],
+ ["Oq",6,.86,"11:54","11:58","O?","Givens: Oswald walking to the SE corner of the 6th (disputed)"],
+ ["Oq",1,.28,"12:00","12:04","O?","Piper: Oswald on the 1st floor, going to eat (disputed)"],
+ ["W",6,.62,"12:00","12:15","BRW","Williams eating lunch on the 6th, near the south windows"],
+ ["G",6,.06,"12:14","12:17","gun","Rowland: a man with a rifle at the 6th-floor west end"],
+ ["Oq",1,.40,"12:13","12:15","O?","Carolyn Arnold (1963): glimpsed Oswald on the 1st floor"],
+ ["Oq",2,.24,"12:15","12:25","O?","Carolyn Arnold (1978): Oswald in the 2nd-floor lunchroom"],
+ ["G",6,.96,"12:18","12:30","gun","Brennan: a man at the 6th-floor SE window"],
+ ["W",5,.80,"12:15","12:31","BRW","Williams on the 5th floor, SE windows"],
+ ["N",5,.92,"12:15","12:31","NJ","Harold Norman and James Jarman beside him"],
+ ["S",6,.96,"12:30","12:31","shots","Shots fired from the 6th-floor SE window (Warren Commission)"],
+ ["W",5,.14,"12:31","12:40","BRW","Williams at the 5th-floor west windows"],
+ ["N",5,.26,"12:31","12:40","NJ","Norman and Jarman with him"],
+ ["B",1,.90,"12:31","12:31:30","BT","Baker and Truly enter and head for the stairs"],
+ ["B",2,.36,"12:31:30","12:32","BT","Baker stops Oswald in the lunchroom; Truly vouches for him"],
+ ["O",2,.24,"12:31:30","12:32:30","LHO","Oswald in the 2nd-floor lunchroom"],
+ ["B",7,.70,"12:32","12:40","BT","Baker and Truly continue up to the roof"],
+ ["O",2,.58,"12:32:30","12:33","LHO","Oswald crossing the 2nd-floor office with a Coke"],
+ ["O",1,.96,"12:33","12:33:40","LHO","Oswald leaving by the front entrance"]
+].map(function(a){return {k:a[0],f:a[1],x:a[2],t0:tm(a[3]),t1:tm(a[4]),tag:a[5],n:a[6]};});
+var bld=document.getElementById("bld"),bnote=document.getElementById("bnote"),lastB="";
+function fy(f){return 18+(7-f)*28;}
+function drawBld(){
+  var h='<text x="165" y="12" text-anchor="middle" font-size="9" fill="var(--muted)" letter-spacing="1">WEST ←  → EAST (Houston St)</text>';
+  for(var f=7;f>=1;f--){var y=fy(f);
+    h+='<rect x="34" y="'+y+'" width="280" height="28" fill="'+(f===6?"var(--hl)":"var(--paper)")+'" stroke="var(--line)"/>';
+    h+='<text x="24" y="'+(y+18)+'" text-anchor="end" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace">'+f+'</text>';}
+  h+='<text x="310" y="'+(fy(6)+11)+'" text-anchor="end" font-size="8.5" fill="var(--muted)">SE window</text>';
+  h+='<line x1="20" y1="'+(fy(1)+28)+'" x2="324" y2="'+(fy(1)+28)+'" stroke="var(--muted)" stroke-width="1.5"/>';
+  h+='<text x="165" y="'+(fy(1)+42)+'" text-anchor="middle" font-size="9" fill="var(--muted)" letter-spacing="1">ELM STREET FRONT</text>';
+  var act=BLD.filter(function(b){return t>=b.t0&&t<b.t1;}),notes=[];
+  act.forEach(function(b){
+    var x=34+b.x*280,y=fy(b.f)+14,c={W:"--bw",N:"--bw",O:"--oz",Oq:"--oz",G:"--oz",S:"--oz",B:"--mc"}[b.k];
+    if(b.k==="S"){h+='<circle cx="'+x+'" cy="'+y+'" r="11" fill="none" stroke="var('+c+')" stroke-width="2"/><circle cx="'+x+'" cy="'+y+'" r="4" fill="var('+c+')"/>';}
+    else if(b.k==="Oq"||b.k==="G"){h+='<circle cx="'+x+'" cy="'+y+'" r="7" fill="var(--panel)" stroke="var('+c+')" stroke-width="1.8" stroke-dasharray="3 2"/><text x="'+x+'" y="'+(y+3.5)+'" text-anchor="middle" font-size="9" font-weight="600" fill="var('+c+')">?</text>';}
+    else {h+='<circle cx="'+x+'" cy="'+y+'" r="7" fill="var('+c+')" stroke="var(--panel)" stroke-width="1.5"/>';}
+    h+='<text x="'+x+'" y="'+(y-9)+'" text-anchor="middle" font-size="8.5" font-weight="600" fill="var('+c+')" font-family="IBM Plex Mono,monospace">'+b.tag+'</text>';
+    notes.push('<li><span style="color:var('+c+');font-weight:600">'+b.tag+'</span> '+b.n+'</li>');
+  });
+  if(t>=tm("12:33:40")) notes.push('<li>Oswald left the building at about 12:33. Police seal it soon after.</li>');
+  if(!notes.length) notes.push('<li>No documented movements at this moment.</li>');
+  var key=h+notes.join("");if(key===lastB)return;lastB=key;
+  bld.innerHTML=h;bnote.innerHTML=notes.join("");
+}
+
+// ---------- status ----------
+var stEl=document.getElementById("status");
+function wStatus(){var s=WILLIAMS[0][1];WILLIAMS.forEach(function(w){if(t>=tm(w[0]))s=w[1];});return s;}
+
+// ---------- render ----------
+function render(){
+  var cw=svg.clientWidth||600,ch=svg.clientHeight||400,tg=target();
+  if(!cam)cam=tg;else cam=lerpR(cam,tg,0.12);
+  var w=cam.w*1.12,h=cam.h*1.12,a=cw/ch;if(w/h<a)w=h*a;else h=w/a;
+  svg.setAttribute("viewBox",(cam.cx-w/2).toFixed(3)+" "+(cam.cy-h/2).toFixed(3)+" "+w.toFixed(3)+" "+h.toFixed(3));
+  var s=w/cw,fs=12*s,out="";
+  // scale bar
+  var mpp=s*111,nice=[100,200,250,500,1000,2000],m=nice[0];nice.forEach(function(n){if(n/mpp<=120)m=n;});
+  document.getElementById("sbar").style.width=(m/mpp).toFixed(0)+"px";
+  document.getElementById("slab").textContent=m>=1000?(m/1000)+" km":m+" m";
+
+  function txt(x,y,str,o){o=o||{};return '<text x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" font-size="'+((o.fs||12)*s).toFixed(3)+'" fill="'+(o.fill||"var(--ink)")+'" text-anchor="'+(o.anchor||"start")+'" font-weight="'+(o.fw||400)+'"'+(o.ls?' letter-spacing="'+(o.ls*s).toFixed(3)+'"':"")+' paint-order="stroke" stroke="var(--paper)" stroke-width="'+(3.5*s).toFixed(3)+'" stroke-linejoin="round"'+(o.it?' font-style="italic"':'')+'>'+str+'</text>';}
+
+  AREAS.forEach(function(ar){if(w<=ar.z*1.6&&!(ar.max&&w<6)){var q=P(ar.p);out+=txt(q[0],q[1],ar.n,{fs:11,fill:"var(--muted)",anchor:"middle",fw:600,ls:2});}});
+  STREETS.forEach(function(st){if(st.lp&&w<=st.z*1.4){var q=P(st.lp);out+=txt(q[0],q[1],st.n,{fs:10,fill:"var(--muted)",anchor:"middle",it:1});}});
+
+  // routes
+  [[BUS,"--bus"],[MOTORCADE,"--mc"],[WESTBROOK,"--wb"],[CROY,"--kc"],[TIPPIT,"--tp"],[OSWALD,"--oz"]].forEach(function(tr){
+    var pos=posAt(tr[0],t),p=paths(tr[0],pos),c="var("+tr[1]+")";
+    out+='<path d="'+p.full.s+'" fill="none" stroke="'+c+'" stroke-opacity=".22" stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+    out+='<path d="'+p.full.d+'" fill="none" stroke="'+c+'" stroke-opacity=".22" stroke-width="2.5" stroke-dasharray="5 5" vector-effect="non-scaling-stroke"/>';
+    out+='<path d="'+p.done.s+'" fill="none" stroke="'+c+'" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
+    out+='<path d="'+p.done.d+'" fill="none" stroke="'+c+'" stroke-width="3" stroke-dasharray="5 5" vector-effect="non-scaling-stroke"/>';
+  });
+
+  // places
+  PLACES.forEach(function(pl){var q=P(pl.p);
+    out+='<rect x="'+(q[0]-3.5*s).toFixed(3)+'" y="'+(q[1]-3.5*s).toFixed(3)+'" width="'+(7*s).toFixed(3)+'" height="'+(7*s).toFixed(3)+'" fill="'+(pl.ruby?"var(--jr)":"var(--panel)")+'" stroke="'+(pl.ruby?"var(--jr)":(pl.later?"var(--tp)":"var(--ink)"))+'"'+(pl.later?' stroke-dasharray="'+(2*s).toFixed(3)+' '+(1.5*s).toFixed(3)+'"':'')+' stroke-width="'+(1.4*s).toFixed(3)+'" transform="rotate(45 '+q[0].toFixed(3)+' '+q[1].toFixed(3)+')"/>';
+    if(!pl.z||w<=pl.z){var dx=pl.dx?10*s:0,dy=pl.dy===1?20*s:(pl.dy===-1?-10*s:-9*s);out+=txt(q[0]+dx,q[1]+dy,pl.n,{fs:11.5,fw:600,anchor:pl.dx?"start":"middle",fill:pl.ruby?"var(--jr)":"var(--ink)"});}
+  });
+
+  // event pulses
+  var reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  EV.forEach(function(e){if(e.loc&&t>=e.t&&t<e.t+1.5){var f=(t-e.t)/1.5,r=(reduce?14:8+f*30)*s;
+    out+='<circle cx="'+e.loc[0].toFixed(3)+'" cy="'+e.loc[1].toFixed(3)+'" r="'+r.toFixed(3)+'" fill="none" stroke="var('+COL[e.k]+')" stroke-width="'+(2.5*s).toFixed(3)+'" opacity="'+(reduce?.7:(1-f)).toFixed(2)+'"/>';}});
+
+  // actors
+  var stat=[];
+  function actor(tr,c,name,shape,ly){var pos=posAt(tr,t);
+    if(!pos){return null;}
+    var r=7.5*s;
+    if(shape==="sq")out+='<rect x="'+(pos.x-r).toFixed(3)+'" y="'+(pos.y-r).toFixed(3)+'" width="'+(2*r).toFixed(3)+'" height="'+(2*r).toFixed(3)+'" rx="'+(2*s).toFixed(3)+'" fill="var('+c+')" stroke="var(--panel)" stroke-width="'+(2*s).toFixed(3)+'"/>';
+    else out+='<circle cx="'+pos.x.toFixed(3)+'" cy="'+pos.y.toFixed(3)+'" r="'+r.toFixed(3)+'" fill="var('+c+')" stroke="var(--panel)" stroke-width="'+(2*s).toFixed(3)+'"/>';
+    out+=txt(pos.x+12*s,pos.y+(ly||4)*s,name,{fs:12.5,fw:700,fill:"var("+c+")"});
+    if(pos.mph)out+=txt(pos.x+12*s,pos.y+((ly||4)+12)*s,mphText(pos),{fs:10.5,fill:"var(--muted)"});
+    return pos;}
+  var pb=actor(BUS,"--bus","Bus 1213","c",4);
+  var pm=actor(MOTORCADE,"--mc","Motorcade","c",4);
+  var pw=actor(WESTBROOK,"--wb","Westbrook","sq",-24);
+  var pk=actor(CROY,"--kc","Croy","sq",34);
+  var pt=actor(TIPPIT,"--tp","Tippit","sq",18);
+  var po=actor(OSWALD,"--oz","Oswald","c",-8);
+  gDyn.innerHTML=out;
+
+  // clock
+  var c=clock(t);document.getElementById("clk").innerHTML=c.hm+"<small>"+c.ap+"</small>";
+  var d=Math.round((t-TSHOT)*60),ad=Math.abs(d),mm=Math.floor(ad/60),sc=ad%60;
+  var hh=Math.floor(mm/60),mstr=hh?hh+":"+pad(mm%60):String(mm);
+  document.getElementById("rel").textContent=d===0?"Shots fired":(mstr+":"+pad(sc)+(d<0?" before the shots":" after the shots"))+(t<TFF?" · morning plays 6× faster":"");
+  rng.value=t;
+
+  // status
+  var rows=[
+    ["--mc","Presidential motorcade",pm?pm.label:(t<tm("11:25")?"In Fort Worth, after the Chamber of Commerce breakfast":(t<tm("11:38")?"Air Force One flying from Carswell AFB to Love Field":"At Love Field: the Kennedys greet the crowd at the fence")),pm],
+    ["--oz","Lee Harvey Oswald",po?po.label:"",po],
+    ["--bw","Bonnie Ray Williams",wStatus(),null],
+    ["--tp","Officer J.D. Tippit",pt?pt.label:"On patrol in district 78; shift began at 7:00 at the Southwest Substation",pt],
+    ["--bus","McWatters' bus 1213",pb?pb.label:(t<tm("12:12")?"Marsalis–Ramona–Elmwood run; McWatters' shift starts 11:52":"Continuing its run; position no longer estimated"),pb],
+    ["--kc","Reserve Sgt. Kenneth Croy",pk?pk.label:"Whereabouts before 12:30 not described in his testimony",pk],
+    ["--wb","Capt. W.R. Westbrook",pw?pw.label:"Personnel captain on duty at City Hall (shift 8:15 to 5:15)",pw]
+  ];
+  var sh=rows.map(function(r){return '<div class="st"><i class="sw" style="background:var('+r[0]+')"></i><b>'+r[1]+(r[3]?'<span class="mph">'+mphText(r[3])+'</span>':'')+'</b><p>'+r[2]+'</p></div>';}).join("");
+  if(stEl._h!==sh){stEl.innerHTML=sh;stEl._h=sh;}
+
+  drawBld();
+
+  // log + caption
+  var ci=-1;EV.forEach(function(e,i){if(e.t<=t+0.0005)ci=i;});
+  if(ci!==curEv){
+    logItems.forEach(function(li,i){li.classList.toggle("fut",i>ci);li.classList.toggle("cur",i===ci);});
+    if(ci>=0){var li=logItems[ci];logEl.scrollTop=li.offsetTop-logEl.clientHeight/2+li.clientHeight/2;}
+    curEv=ci;
+    var e=EV[Math.max(ci,0)];
+    document.getElementById("capT").textContent=ci>=0?clock(e.t).short:"9:50";
+    document.getElementById("capX").textContent=ci>=0?e.x:"Press Play to run the afternoon forward.";
+    document.getElementById("capT").style.color="var("+(ci>=0?COL[e.k]:"--muted")+")";
+  }
+}
+
+function loop(ts){
+  if(lastTs!=null&&playing){var dt=Math.min(0.1,(ts-lastTs)/1000);t+=dt*speed/60*(t<TFF?6:1);if(t>=T1){t=T1;playing=false;setPlay();}}
+  lastTs=ts;render();requestAnimationFrame(loop);
+}
+setPlay();requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
